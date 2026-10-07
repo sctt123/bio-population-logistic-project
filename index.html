@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logistic Growth Model — G9 Biology</title>
+<style>
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: Inter, Arial, sans-serif;
+        background: #f4f7f5;
+        color: #1f2d27;
+    }
+    header {
+        background: linear-gradient(135deg, #173f35, #2e6b58);
+        color: white;
+        padding: 34px 7vw 30px;
+    }
+    header .tag {
+        display: inline-block;
+        padding: 6px 11px;
+        border: 1px solid rgba(255,255,255,.35);
+        border-radius: 999px;
+        font-size: 12px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(30px, 5vw, 48px); }
+    header p { margin: 0; max-width: 760px; opacity: .9; line-height: 1.6; }
+    main { width: min(1180px, 92vw); margin: 28px auto 60px; }
+    .grid { display: grid; grid-template-columns: 330px 1fr; gap: 20px; }
+    .card {
+        background: white;
+        border: 1px solid #dce7e1;
+        border-radius: 18px;
+        box-shadow: 0 7px 24px rgba(20,55,43,.07);
+        padding: 22px;
+    }
+    .card h2 { margin: 0 0 16px; font-size: 19px; }
+    .control { margin: 20px 0 26px; }
+    .control-top { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    label { font-weight: 700; }
+    output {
+        min-width: 74px;
+        text-align:center;
+        background:#eaf3ef;
+        color:#205b49;
+        border-radius:9px;
+        padding:6px 9px;
+        font-weight:800;
+    }
+    input[type=range] { width:100%; accent-color:#2e6b58; margin-top:12px; }
+    input[type=number] {
+        width:100%; padding:10px; border:1px solid #cddbd4; border-radius:9px;
+        font-size:15px;
+    }
+    .hint { color:#60736b; font-size:13px; line-height:1.5; margin-top:7px; }
+    button {
+        border:0; border-radius:10px; padding:10px 14px; cursor:pointer;
+        font-weight:700; background:#2e6b58; color:white;
+    }
+    button.secondary { background:#edf3f0; color:#255746; }
+    button:hover { filter:brightness(.96); }
+    .buttons { display:flex; gap:8px; flex-wrap:wrap; }
+    .equation {
+        font-family: Georgia, serif; font-size: 24px; text-align:center;
+        background:#f6faf8; padding:18px; border-radius:12px; margin:12px 0;
+    }
+    canvas { width:100%; height:410px; display:block; border-radius:12px; background:#fbfdfc; }
+    .legend { display:flex; gap:20px; flex-wrap:wrap; margin-top:12px; font-size:13px; color:#53665e; }
+    .dot { width:11px; height:11px; border-radius:50%; display:inline-block; margin-right:6px; }
+    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:16px; }
+    .stat { background:#f6faf8; padding:13px; border-radius:12px; }
+    .stat small { display:block; color:#667b72; margin-bottom:4px; }
+    .stat strong { font-size:20px; }
+    .wide { margin-top:20px; }
+    .two { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .experiment-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .experiment-table th, .experiment-table td { padding:9px 7px; border-bottom:1px solid #e2ebe6; text-align:right; }
+    .experiment-table th:first-child, .experiment-table td:first-child { text-align:left; }
+    .experiment-table th { color:#50665c; background:#f6faf8; }
+    .empty { color:#73837d; text-align:center !important; padding:18px !important; }
+    .mode-tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+    .mode-tabs button.active { background:#173f35; }
+    .mode { display:none; }
+    .mode.active { display:block; }
+    .comparison { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .mini-note { font-size:13px; color:#667b72; line-height:1.55; }
+    .metric-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+    .metric { background:#f6faf8; border-radius:10px; padding:12px; }
+    .metric b { display:block; font-size:18px; margin-top:3px; }
+    ul { line-height:1.65; padding-left:21px; }
+    .callout { border-left:4px solid #2e6b58; padding:12px 15px; background:#f2f8f5; line-height:1.6; }
+    footer { text-align:center; color:#718078; font-size:12px; padding:0 0 30px; }
+    @media (max-width: 850px) {
+        .grid, .two { grid-template-columns:1fr; }
+        .stats { grid-template-columns:1fr; }
+        canvas { height:330px; }
+    }
+</style>
+</head>
+<body>
+<header>
+    <div class="tag">G9 Biology • Population Models</div>
+    <h1>Logistic Growth Model</h1>
+    <p>Explore how intrinsic growth rate <b>r</b> and carrying capacity <b>K</b> affect population growth when environmental resistance limits a population.</p>
+</header>
+
+<main>
+    <div class="grid">
+        <section class="card">
+            <h2>Simulation Controls</h2>
+
+            <div class="control">
+                <div class="control-top">
+                    <label for="K">Carrying capacity (K)</label>
+                    <output id="KOut">1000</output>
+                </div>
+                <input id="K" type="range" min="200" max="3000" step="50" value="1000">
+                <div class="hint">Maximum population the environment can sustainably support.</div>
+            </div>
+
+            <div class="control">
+                <div class="control-top">
+                    <label for="r">Intrinsic growth rate (r)</label>
+                    <output id="rOut">0.20</output>
+                </div>
+                <input id="r" type="range" min="0.02" max="1.00" step="0.01" value="0.20">
+                <div class="hint">Higher r means faster potential population growth.</div>
+            </div>
+
+            <div class="control">
+                <label for="N0">Initial population (N₀)</label>
+                <input id="N0" type="number" min="1" max="2999" value="100">
+                <div class="hint">Starting population at time 0.</div>
+            </div>
+
+            <div class="buttons">
+                <button id="reset">Reset</button>
+                <button class="secondary" id="presetSlow">Slow growth</button>
+                <button class="secondary" id="presetFast">Fast growth</button>
+            </div>
+
+            <div style="margin-top:22px">
+                <h2 style="font-size:16px">Simulation Modes</h2>
+                <div class="mode-tabs">
+                    <button class="active" data-mode="liveMode">Live</button>
+                    <button class="secondary" data-mode="experimentMode">Experiment</button>
+                    <button class="secondary" data-mode="compareMode">Model Compare</button>
+                </div>
+            </div>
+
+            <div class="equation">
+                dN/dt = rN × <span style="white-space:nowrap">(K − N) / K</span>
+            </div>
+
+            <div class="callout">
+                <b>Key idea:</b> when N is far below K, growth is rapid. As N approaches K, the factor (K − N)/K becomes smaller, so population growth slows.
+            </div>
+        </section>
+
+        <section class="card">
+            <div id="liveMode" class="mode active">
+                <h2>Live Population Simulation</h2>
+                <canvas id="chart"></canvas>
+                <div class="legend">
+                    <span><i class="dot" style="background:#2e6b58"></i>Population N</span>
+                    <span><i class="dot" style="background:#b27a2b"></i>Carrying capacity K</span>
+                </div>
+                <div class="stats">
+                    <div class="stat"><small>Final population</small><strong id="finalN">—</strong></div>
+                    <div class="stat"><small>Time to ~90% of K</small><strong id="time90">—</strong></div>
+                    <div class="stat"><small>Growth rate r</small><strong id="statR">—</strong></div>
+                </div>
+            </div>
+
+            <div id="experimentMode" class="mode">
+                <h2>Experiment Mode — Multiple Curves</h2>
+                <p class="mini-note">Run trials with different parameters. Each trial is saved so you can compare curves and export the results to your project analysis.</p>
+                <canvas id="experimentChart"></canvas>
+                <div class="buttons" style="margin-top:12px">
+                    <button id="addTrial">Add Current Trial</button>
+                    <button class="secondary" id="clearTrials">Clear Trials</button>
+                </div>
+                <div style="overflow:auto; margin-top:15px">
+                    <table class="experiment-table">
+                        <thead><tr><th>Trial</th><th>K</th><th>r</th><th>N₀</th><th>Final N</th><th>Time to 90% K</th></tr></thead>
+                        <tbody id="trialBody"><tr><td colspan="6" class="empty">No trials yet. Add a trial using the current parameters.</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="compareMode" class="mode">
+                <h2>Exponential vs Logistic Growth</h2>
+                <p class="mini-note">Both models start with the same N₀ and r. The logistic model includes the carrying-capacity term, while the exponential model assumes unlimited resources.</p>
+                <canvas id="compareChart"></canvas>
+                <div class="comparison" style="margin-top:14px">
+                    <div class="metric"><small>Logistic final population</small><b id="logFinal">—</b></div>
+                    <div class="metric"><small>Exponential final population</small><b id="expFinal">—</b></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="two wide">
+        <section class="card">
+            <h2>What should you observe?</h2>
+            <ul>
+                <li>The graph forms an <b>S-shaped curve</b> when the population begins below K.</li>
+                <li>Increasing <b>r</b> makes the population rise more quickly, but does not change the carrying capacity.</li>
+                <li>Increasing <b>K</b> raises the population level around which the curve eventually stabilises.</li>
+                <li>Growth is fastest around the middle of the S-curve, near <b>N = K/2</b>.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Assumptions & Limitations</h2>
+            <ul>
+                <li>K is treated as constant throughout the simulation.</li>
+                <li>The population is represented by one overall growth rate r.</li>
+                <li>All individuals are assumed to experience the same environmental conditions.</li>
+                <li>Real ecosystems can have changing resources, migration, disease, predation, competition and seasonal effects that this simple model does not include.</li>
+            </ul>
+        </section>
+    </div>
+
+    <section class="card wide">
+        <h2>Interpretation Challenge</h2>
+        <p><b>Change one parameter at a time.</b> First change r while keeping K fixed. Then return r to its original value and change K. Compare the two curves.</p>
+        <p id="interpretation" class="callout">Current interpretation will appear here.</p>
+    </section>
+</main>
+
+<footer>
+    G9 Biology Project • Logistic Growth Model • Interactive simulation
+</footer>
+
+<script>
+const KSlider = document.getElementById("K");
+const rSlider = document.getElementById("r");
+const N0Input = document.getElementById("N0");
+const KOut = document.getElementById("KOut");
+const rOut = document.getElementById("rOut");
+const finalN = document.getElementById("finalN");
+const time90 = document.getElementById("time90");
+const statR = document.getElementById("statR");
+const interpretation = document.getElementById("interpretation");
+
+const canvas = document.getElementById("chart");
+const ctx = canvas.getContext("2d");
+const expCanvas = document.getElementById("experimentChart");
+const expCtx = expCanvas.getContext("2d");
+const compareCanvas = document.getElementById("compareChart");
+const compareCtx = compareCanvas.getContext("2d");
+
+let trials = [];
+
+function simulateLogistic(K, r, N0) {
+    const points = [];
+    let N = Math.max(1, Math.min(N0, K * 0.999));
+    const dt = 0.05;
+    const totalTime = 40;
+    for (let t = 0; t <= totalTime; t += dt) {
+        points.push({t, N});
+        N += r * N * ((K - N) / K) * dt;
+        if (N < 0) N = 0;
+    }
+    return points;
+}
+
+function simulateExponential(r, N0) {
+    const points = [];
+    let N = N0;
+    const dt = 0.05;
+    const totalTime = 40;
+    for (let t = 0; t <= totalTime; t += dt) {
+        points.push({t, N});
+        N += r * N * dt;
+        if (!Number.isFinite(N) || N > 1e12) {
+            N = 1e12;
+            points.push({t: totalTime, N});
+            break;
+        }
+    }
+    return points;
+}
+
+function setupCanvas(c) {
+    const ratio = window.devicePixelRatio || 1;
+    const rect = c.getBoundingClientRect();
+    c.width = rect.width * ratio;
+    c.height = rect.height * ratio;
+    const cctx = c.getContext("2d");
+    cctx.setTransform(ratio,0,0,ratio,0,0);
+    return {ctx:cctx, w:rect.width, h:rect.height};
+}
+
+function drawAxes(cctx, w, h, maxY, maxT=40) {
+    const pad = {l:58, r:22, t:20, b:45};
+    const plotW = w-pad.l-pad.r, plotH = h-pad.t-pad.b;
+    cctx.strokeStyle = "#dce7e1";
+    cctx.lineWidth = 1;
+    cctx.font = "12px Arial";
+    cctx.fillStyle = "#667b72";
+
+    for (let i=0;i<=5;i++) {
+        const y = pad.t + plotH - i*plotH/5;
+        cctx.beginPath(); cctx.moveTo(pad.l,y); cctx.lineTo(w-pad.r,y); cctx.stroke();
+        cctx.fillText(Math.round(maxY*i/5).toLocaleString(), 5, y+4);
+    }
+    for (let i=0;i<=4;i++) {
+        const x = pad.l + i*plotW/4;
+        cctx.beginPath(); cctx.moveTo(x,pad.t); cctx.lineTo(x,h-pad.b); cctx.stroke();
+        cctx.fillText((maxT*i/4).toFixed(0), x-5, h-20);
+    }
+    cctx.fillText("Population size (N)", pad.l, 14);
+    cctx.fillText("Time", w/2-14, h-5);
+    return {pad, plotW, plotH};
+}
+
+function draw() {
+    const K = Number(KSlider.value);
+    const r = Number(rSlider.value);
+    const N0 = Number(N0Input.value);
+    const points = simulateLogistic(K, r, N0);
+
+    KOut.textContent = K;
+    rOut.textContent = r.toFixed(2);
+    statR.textContent = r.toFixed(2);
+
+    const setup = setupCanvas(canvas);
+    const cctx = setup.ctx, w = setup.w, h = setup.h;
+    cctx.clearRect(0,0,w,h);
+
+    const maxY = K * 1.1;
+    const {pad, plotW, plotH} = drawAxes(cctx,w,h,maxY);
+
+    const yK = pad.t + plotH*(1-K/maxY);
+    cctx.setLineDash([7,5]);
+    cctx.strokeStyle = "#b27a2b";
+    cctx.lineWidth = 2;
+    cctx.beginPath(); cctx.moveTo(pad.l,yK); cctx.lineTo(w-pad.r,yK); cctx.stroke();
+    cctx.setLineDash([]);
+
+    cctx.strokeStyle = "#2e6b58";
+    cctx.lineWidth = 3;
+    cctx.beginPath();
+    points.forEach((p,i)=>{
+        const x = pad.l + (p.t/40)*plotW;
+        const y = pad.t + plotH*(1-p.N/maxY);
+        if(i===0) cctx.moveTo(x,y); else cctx.lineTo(x,y);
+    });
+    cctx.stroke();
+
+    const last = points[points.length-1].N;
+    const target = K*0.9;
+    const hit = points.find(p=>p.N>=target);
+    finalN.textContent = Math.round(last).toLocaleString();
+    time90.textContent = hit ? hit.t.toFixed(1) : ">40";
+
+    if (N0 >= K) {
+        interpretation.textContent = "The initial population is at or above K, so the model predicts little or negative net growth until the population approaches the carrying capacity.";
+    } else {
+        interpretation.textContent =
+            `With K = ${K} and r = ${r.toFixed(2)}, the population rises from ${N0.toLocaleString()} and approaches K. ` +
+            (r >= 0.5 ? "Because r is high, the curve rises rapidly." :
+             r <= 0.15 ? "Because r is relatively low, the approach to K is slower." :
+             "The population shows a moderate rate of increase before stabilising near K.");
+    }
+
+    drawExperiment();
+    drawComparison();
+}
+
+function drawExperiment() {
+    const setup = setupCanvas(expCanvas);
+    const cctx=setup.ctx,w=setup.w,h=setup.h;
+    cctx.clearRect(0,0,w,h);
+    const maxK = Math.max(1000, ...trials.map(t=>t.K)) * 1.1;
+    const {pad,plotW,plotH}=drawAxes(cctx,w,h,maxK);
+
+    trials.forEach((trial, idx) => {
+        const pts=simulateLogistic(trial.K,trial.r,trial.N0);
+        cctx.strokeStyle = `hsl(${idx*67 % 360}, 45%, 35%)`;
+        cctx.lineWidth=2.5;
+        cctx.beginPath();
+        pts.forEach((p,i)=>{
+            const x=pad.l+(p.t/40)*plotW;
+            const y=pad.t+plotH*(1-p.N/maxK);
+            if(i===0)cctx.moveTo(x,y); else cctx.lineTo(x,y);
+        });
+        cctx.stroke();
+    });
+}
+
+function drawComparison() {
+    const K=Number(KSlider.value), r=Number(rSlider.value), N0=Number(N0Input.value);
+    const logistic=simulateLogistic(K,r,N0);
+    const exponential=simulateExponential(r,N0);
+    const setup=setupCanvas(compareCanvas);
+    const cctx=setup.ctx,w=setup.w,h=setup.h;
+    cctx.clearRect(0,0,w,h);
+
+    const maxY=Math.max(K*1.1, Math.min(exponential[exponential.length-1].N, 10000));
+    const {pad,plotW,plotH}=drawAxes(cctx,w,h,maxY);
+
+    function curve(points, style) {
+        cctx.strokeStyle=style; cctx.lineWidth=3; cctx.beginPath();
+        points.forEach((p,i)=>{
+            const x=pad.l+(p.t/40)*plotW;
+            const y=pad.t+plotH*(1-Math.min(p.N,maxY)/maxY);
+            if(i===0)cctx.moveTo(x,y); else cctx.lineTo(x,y);
+        });
+        cctx.stroke();
+    }
+    curve(logistic,"#2e6b58");
+    curve(exponential,"#7a4b2a");
+
+    const lf=logistic[logistic.length-1].N;
+    const ef=exponential[exponential.length-1].N;
+    document.getElementById("logFinal").textContent=Math.round(lf).toLocaleString();
+    document.getElementById("expFinal").textContent=ef>=1e12 ? ">1 trillion" : Math.round(ef).toLocaleString();
+}
+
+function renderTrials() {
+    const body=document.getElementById("trialBody");
+    if(!trials.length) {
+        body.innerHTML='<tr><td colspan="6" class="empty">No trials yet. Add a trial using the current parameters.</td></tr>';
+        return;
+    }
+    body.innerHTML=trials.map(t=>`
+        <tr>
+            <td>${t.id}</td><td>${t.K}</td><td>${t.r.toFixed(2)}</td><td>${t.N0}</td>
+            <td>${Math.round(t.final).toLocaleString()}</td><td>${t.t90}</td>
+        </tr>`).join("");
+}
+
+document.getElementById("addTrial").addEventListener("click",()=>{
+    const K=Number(KSlider.value), r=Number(rSlider.value), N0=Number(N0Input.value);
+    const pts=simulateLogistic(K,r,N0);
+    const target=K*0.9;
+    const hit=pts.find(p=>p.N>=target);
+    trials.push({
+        id:trials.length+1,K,r,N0,
+        final:pts[pts.length-1].N,
+        t90:hit?hit.t.toFixed(1):">40"
+    });
+    renderTrials();
+    drawExperiment();
+});
+
+document.getElementById("clearTrials").addEventListener("click",()=>{
+    trials=[];
+    renderTrials();
+    drawExperiment();
+});
+
+document.querySelectorAll("[data-mode]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+        document.querySelectorAll("[data-mode]").forEach(b=>{
+            b.classList.remove("active");
+            if(b.classList.contains("secondary")===false)b.classList.add("secondary");
+        });
+        btn.classList.add("active");
+        btn.classList.remove("secondary");
+        document.querySelectorAll(".mode").forEach(m=>m.classList.remove("active"));
+        document.getElementById(btn.dataset.mode).classList.add("active");
+        setTimeout(draw,20);
+    });
+});
+
+[KSlider,rSlider,N0Input].forEach(el=>el.addEventListener("input",draw));
+
+document.getElementById("reset").addEventListener("click",()=>{
+    KSlider.value=1000; rSlider.value=0.20; N0Input.value=100; draw();
+});
+document.getElementById("presetSlow").addEventListener("click",()=>{
+    KSlider.value=1000; rSlider.value=0.08; N0Input.value=100; draw();
+});
+document.getElementById("presetFast").addEventListener("click",()=>{
+    KSlider.value=1000; rSlider.value=0.70; N0Input.value=100; draw();
+});
+
+window.addEventListener("resize",draw);
+renderTrials();
+draw();
+</script>
+</body>
+</html>
